@@ -1,14 +1,8 @@
-// Wrap custom functionality up in a closure to keep scopes tidy
-var add_streetlights = (function() {
-    var wfs_url = "https://data.angus.gov.uk/geoserver/services/wfs";
-    var wfs_feature = "lighting_column_v";
-    var wfs_fault_feature = "lighting_faults_v";
-    var streetlight_category = "Street lighting";
-    var max_resolution = 2.388657133579254;
-    var min_resolution = 0.5971642833948135;
+var fixmystreet = fixmystreet || {};
 
-    var streetlight_layer = null;
-    var streetlight_fault_layer = null;
+fixmystreet.add_assets = function(options) {
+    var asset_layer = null;
+    var asset_fault_layer = null;
     var select_feature_control;
     var hover_feature_control;
     var selected_feature = null;
@@ -22,13 +16,13 @@ var add_streetlights = (function() {
         }
     }
 
-    function streetlight_selected(e) {
+    function asset_selected(e) {
         close_fault_popup();
         var lonlat = e.feature.geometry.getBounds().getCenterLonLat();
 
         // Check if there is a known fault with the light that's been clicked,
         // and disallow selection if so.
-        var fault_feature = find_matching_feature(e.feature, streetlight_fault_layer);
+        var fault_feature = find_matching_feature(e.feature, asset_fault_layer);
         if (!!fault_feature) {
             fault_popup = new OpenLayers.Popup.FramedCloud("popup",
                 e.feature.geometry.getBounds().getCenterLonLat(),
@@ -41,9 +35,11 @@ var add_streetlights = (function() {
             return;
         }
 
-        // Set the 'column id' extra field to the value of the light that was clicked
-        var column_id = e.feature.attributes.n;
-        $("#form_column_id").val(column_id);
+        // Set the extra field to the value of the selected feature
+        $.each(options.attributes, function (field_name, attribute_name) {
+            var id = e.feature.attributes[attribute_name];
+            $("#form_" + field_name).val(id);
+        });
 
         // Hide the normal markers layer to keep things simple, but
         // move the green marker to the point of the click to stop
@@ -64,13 +60,18 @@ var add_streetlights = (function() {
         selected_feature = feature.clone();
     }
 
-    function streetlight_unselected(e) {
+    function asset_unselected(e) {
         fixmystreet.markers.setVisibility(true);
-        $("#form_column_id").val("");
+        $.each(options.attributes, function (field_name, attribute_name) {
+            $("#form_" + field_name).val("");
+        });
         selected_feature = null;
     }
 
     function find_matching_feature(feature, layer) {
+        if (!layer) {
+            return false;
+        }
         // When the WFS layer is reloaded the same features might be visible
         // but they'll be different instances of the class so we can't use
         // object identity comparisons.
@@ -86,49 +87,50 @@ var add_streetlights = (function() {
         }
     }
 
-    function check_zoom_message_visiblity() {
-        var category = $("#problem_form select#form_category").val();
-        if (category == streetlight_category) {
-            var $p = $("#category_meta_message");
-
+    function check_zoom_message_visibility() {
+        var category = $("#problem_form select#form_category").val(),
+            prefix = options.asset_category.replace(/[^a-z]/gi, ''),
+            id = "category_meta_message_" + prefix,
+            $p = $('#' + id);
+        if (category == options.asset_category) {
             if ($p.length === 0) {
-                $p = $("<p>").prop("id", "category_meta_message");
+                $p = $("<p>").prop("id", id);
                 // #category_meta might not be here yet, but that's OK as the
                 // element simply won't be added to the DOM.
                 $p.insertAfter("#category_meta");
             }
 
-            if (streetlight_layer.getVisibility() && streetlight_layer.inRange) {
-                $p.html('Or pick a <b class="streetlight-spot">street light</b> from the map &raquo;');
+            if (asset_layer.getVisibility() && asset_layer.inRange) {
+                $p.html('Or pick a <b class="streetlight-spot">' + options.asset_item + '</b> from the map &raquo;');
             } else {
-                $p.html('Or zoom in and pick a street light from the map');
+                $p.html('Or zoom in and pick a ' + options.asset_item + ' from the map');
             }
 
         } else {
-            $("#category_meta_message").remove();
+            $p.remove();
         }
     }
 
     function layer_visibilitychanged() {
-        check_zoom_message_visiblity();
-        select_nearest_streetlight();
+        check_zoom_message_visibility();
+        select_nearest_asset();
     }
 
-    function zoom_to_streetlights() {
+    function zoom_to_assets() {
         // This function is called when the street lighting category is
         // selected, and will zoom the map in to the first level that
         // makes the street light layer visible if it's not already shown.
-        if (!streetlight_layer.inRange) {
-            var firstVisibleResolution = streetlight_layer.resolutions[0];
+        if (!asset_layer.inRange) {
+            var firstVisibleResolution = asset_layer.resolutions[0];
             var zoomLevel = fixmystreet.map.getZoomForResolution(firstVisibleResolution);
             fixmystreet.map.zoomTo(zoomLevel);
         }
     }
 
-    function select_nearest_streetlight() {
+    function select_nearest_asset() {
         // The user's green marker might be on the map the first time we show the
-        // streetlights, so snap it to the closest streetlight marker if so.
-        if (!fixmystreet.markers.getVisibility() || !(streetlight_layer.getVisibility() && streetlight_layer.inRange)) {
+        // assets, so snap it to the closest asset marker if so.
+        if (!fixmystreet.markers.getVisibility() || !(asset_layer.getVisibility() && asset_layer.inRange)) {
             return;
         }
         var threshold = 50; // metres
@@ -139,8 +141,8 @@ var add_streetlights = (function() {
         }
         var closest_feature;
         var closest_distance = null;
-        for (var i = 0; i < streetlight_layer.features.length; i++) {
-            var candidate = streetlight_layer.features[i];
+        for (var i = 0; i < asset_layer.features.length; i++) {
+            var candidate = asset_layer.features[i];
             var distance = candidate.geometry.distanceTo(marker.geometry);
             if (closest_distance === null || distance < closest_distance) {
                 closest_feature = candidate;
@@ -153,17 +155,17 @@ var add_streetlights = (function() {
     }
 
     function layer_loadend(e) {
-        select_nearest_streetlight();
+        select_nearest_asset();
         // Preserve the selected marker when panning/zooming, if it's still on the map
         if (selected_feature !== null && !(selected_feature in this.selectedFeatures)) {
-            var replacement_feature = find_matching_feature(selected_feature, streetlight_layer);
+            var replacement_feature = find_matching_feature(selected_feature, asset_layer);
             if (!!replacement_feature) {
                 select_feature_control.select(replacement_feature);
             }
         }
     }
 
-    function get_streetlight_stylemap() {
+    function get_asset_stylemap() {
         return new OpenLayers.StyleMap({
             'default': new OpenLayers.Style({
                 fillColor: "#FFFF00",
@@ -175,6 +177,7 @@ var add_streetlights = (function() {
             }),
             'select': new OpenLayers.Style({
                 externalGraphic: fixmystreet.pin_prefix + "pin-spot.png",
+                fillColor: "#55BB00",
                 graphicWidth: 48,
                 graphicHeight: 64,
                 graphicXOffset: -24,
@@ -212,8 +215,8 @@ var add_streetlights = (function() {
         });
     }
 
-    function add_streetlights() {
-        if (streetlight_layer !== null) {
+    function add_assets() {
+        if (asset_layer !== null) {
             // Layer has already been added
             return;
         }
@@ -224,7 +227,7 @@ var add_streetlights = (function() {
         }
         if (fixmystreet.map === undefined) {
             // Map's not loaded yet, let's try again soon...
-            setTimeout(add_streetlights, 250);
+            setTimeout(add_assets, 250);
             return;
         }
         if (fixmystreet.page != 'new' && fixmystreet.page != 'around') {
@@ -233,48 +236,62 @@ var add_streetlights = (function() {
         }
 
         // An interactive layer for selecting a street light
-        var protocol = new OpenLayers.Protocol.WFS({
+        var protocol_options = {
             version: "1.1.0",
-            url:  wfs_url,
-            featureType: wfs_feature,
-            geometryName: "g"
-        });
-        streetlight_layer = new OpenLayers.Layer.Vector("WFS", {
+            url: options.wfs_url,
+            featureType: options.wfs_feature,
+            geometryName: options.geometryName
+        };
+        if (fixmystreet.wmts_config) {
+            protocol_options.srsName = fixmystreet.wmts_config.map_projection;
+        }
+        var protocol = new OpenLayers.Protocol.WFS(protocol_options);
+        var layer_options = {
             strategies: [new OpenLayers.Strategy.BBOX()],
             protocol: protocol,
             visibility: false,
-            maxResolution: max_resolution,
-            minResolution: min_resolution,
-            styleMap: get_streetlight_stylemap()
-        });
-        fixmystreet.streetlight_layer = streetlight_layer;
+            maxResolution: options.max_resolution,
+            minResolution: options.min_resolution,
+            styleMap: get_asset_stylemap()
+        };
+        if (fixmystreet.wmts_config) {
+            layer_options.projection = new OpenLayers.Projection(fixmystreet.wmts_config.map_projection);
+        }
+        if (options.filter_key) {
+            layer_options.filter = new OpenLayers.Filter.Comparison({
+                type: OpenLayers.Filter.Comparison.EQUAL_TO,
+                property: options.filter_key,
+                value: options.filter_value
+            });
+        }
+        asset_layer = new OpenLayers.Layer.Vector("WFS", layer_options);
 
         // A non-interactive layer to display existing street light faults
-        var fault_protocol = new OpenLayers.Protocol.WFS({
-            version: "1.1.0",
-            url:  wfs_url,
-            featureType: wfs_fault_feature,
-            geometryName: "g"
-        });
-        streetlight_fault_layer = new OpenLayers.Layer.Vector("WFS", {
-            strategies: [new OpenLayers.Strategy.BBOX()],
-            protocol: fault_protocol,
-            visibility: false,
-            maxResolution: max_resolution,
-            minResolution: min_resolution,
-            styleMap: get_fault_stylemap()
-        });
+        if (options.wfs_fault_feature) {
+            var po = {
+                featureType: options.wfs_fault_feature
+            };
+            OpenLayers.Util.applyDefaults(po, protocol_options);
+            var fault_protocol = new OpenLayers.Protocol.WFS(po);
+            var lo = {
+                strategies: [new OpenLayers.Strategy.BBOX()],
+                protocol: fault_protocol,
+                styleMap: get_fault_stylemap()
+            };
+            OpenLayers.Util.applyDefaults(lo, layer_options);
+            asset_fault_layer = new OpenLayers.Layer.Vector("WFS", lo);
+        }
 
         // Set up handlers for selecting/unselecting markers and panning/zooming the map
-        select_feature_control = new OpenLayers.Control.SelectFeature( streetlight_layer );
-        streetlight_layer.events.register( 'featureselected', streetlight_layer, streetlight_selected);
-        streetlight_layer.events.register( 'featureunselected', streetlight_layer, streetlight_unselected);
-        streetlight_layer.events.register( 'loadend', streetlight_layer, layer_loadend);
-        streetlight_layer.events.register( 'visibilitychanged', streetlight_layer, layer_visibilitychanged);
-        fixmystreet.map.events.register( 'zoomend', streetlight_layer, check_zoom_message_visiblity);
+        select_feature_control = new OpenLayers.Control.SelectFeature( asset_layer );
+        asset_layer.events.register( 'featureselected', asset_layer, asset_selected);
+        asset_layer.events.register( 'featureunselected', asset_layer, asset_unselected);
+        asset_layer.events.register( 'loadend', asset_layer, layer_loadend);
+        asset_layer.events.register( 'visibilitychanged', asset_layer, layer_visibilitychanged);
+        fixmystreet.map.events.register( 'zoomend', asset_layer, check_zoom_message_visibility);
         // Set up handlers for simply hovering over a street light marker
         hover_feature_control = new OpenLayers.Control.SelectFeature(
-            streetlight_layer,
+            asset_layer,
             {
                 hover: true,
                 highlightOnly: true,
@@ -289,42 +306,50 @@ var add_streetlights = (function() {
             }
         });
 
-        fixmystreet.map.addLayer(streetlight_layer);
-        fixmystreet.map.addLayer(streetlight_fault_layer);
+        fixmystreet.map.addLayer(asset_layer);
+        if (asset_fault_layer) {
+            fixmystreet.map.addLayer(asset_fault_layer);
+        }
         fixmystreet.map.addControl( hover_feature_control );
         hover_feature_control.activate();
         fixmystreet.map.addControl( select_feature_control );
         select_feature_control.activate();
 
         // Make sure the fault markers always appear beneath the street lights
-        streetlight_fault_layer.setZIndex(streetlight_layer.getZIndex()-1);
+        if (asset_fault_layer) {
+            asset_fault_layer.setZIndex(asset_layer.getZIndex()-1);
+        }
 
-        // Show/hide the streetlight layer when the category is chosen
+        // Show/hide the asset layer when the category is chosen
         $("#problem_form").on("change.category", "select#form_category", function(){
             var category = $(this).val();
-            if (category == streetlight_category) {
-                streetlight_layer.setVisibility(true);
-                streetlight_fault_layer.setVisibility(true);
-                zoom_to_streetlights();
+            if (category == options.asset_category) {
+                asset_layer.setVisibility(true);
+                if (asset_fault_layer) {
+                    asset_fault_layer.setVisibility(true);
+                }
+                zoom_to_assets();
             } else {
-                streetlight_layer.setVisibility(false);
-                streetlight_fault_layer.setVisibility(false);
+                asset_layer.setVisibility(false);
+                if (asset_fault_layer) {
+                    asset_fault_layer.setVisibility(false);
+                }
             }
         });
     }
 
-    // Make sure the streetlights get hidden if the back button is pressed
+    // Make sure the assets get hidden if the back button is pressed
     fixmystreet.maps.display_around = (function(original) {
-        function hide_streetlights() {
-            streetlight_layer.setVisibility(false);
-            streetlight_fault_layer.setVisibility(false);
+        function hide_assets() {
+            asset_layer.setVisibility(false);
+            if (asset_fault_layer) {
+                asset_fault_layer.setVisibility(false);
+            }
             fixmystreet.markers.setVisibility(true);
             original.apply(fixmystreet.maps);
         }
-        return hide_streetlights;
+        return hide_assets;
     })(fixmystreet.maps.display_around);
 
-    return add_streetlights;
-})();
-
-$(add_streetlights);
+    return add_assets;
+};
