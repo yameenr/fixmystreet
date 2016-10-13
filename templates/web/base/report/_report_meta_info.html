@@ -1,2 +1,6 @@
 [% problem.meta_line(c) | html %]
+[% IF c.user_exists AND c.user.id == problem.user_id AND !problem.anonymous %]
+  <!-- TODO: Should this link to a page with server-side form, for users without JavaScript? -->
+  <a href="#" class="js-hide-name">([% loc('Hide your name?') %])</a>
+[% END %]
 [%- IF !problem.used_map %]; <strong>([% loc('there is no pin shown as the user did not use the map') %])</strong>[% END %]

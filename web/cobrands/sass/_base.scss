@@ -2006,7 +2006,20 @@ table.nicetable {
             text-decoration: none;
             background-color: mix(#000, $primary, 70%);
         }
+
+        &:first-child {
+            margin-top: 0;
+        }
     }
+
+    a + p {
+        margin-top: 1em;
+    }
+}
+
+.hide-name-form {
+    // Gets unhidden by JavaScript
+    display: none;
 }
 
 @import "_admin";

@@ -24,7 +24,24 @@
             <div class="item-list__update-wrap">
             [% IF update.whenanswered %]
                 <div class="item-list__update-text">
-                    <p class="meta-2"> [% INCLUDE meta_line %] </p>
+                    <p class="meta-2">
+                        [% INCLUDE meta_line %]
+                        [% IF c.user_exists AND c.user.id == update.user_id AND !update.anonymous %]
+                            <!-- TODO: Should this link to a page with server-side form, for users without JavaScript? -->
+                            <a href="#" class="js-hide-name">([% loc('Hide your name?') %])</a>
+                        [% END %]
+                    </p>
+                  [% IF c.user_exists AND c.user.id == update.user_id AND !update.anonymous %]
+                    <!-- TODO: Do we want to ajax this in? -->
+                    <!-- TODO: Should this work without javascript too? -->
+                    <div class="box-warning hide-name-form">
+                        <!-- TODO: URL or form with button? -->
+                        <a href="#">[% loc('Hide my name in this update') %]</a>
+                        <p>[% loc('Alternatively, we can hide your name on <strong>all of your updates</strong>:') %]</p>
+                        <!-- TODO: URL or form with button? -->
+                        <a href="#">[% loc('Hide my name on all my updates') %]</a>
+                    </div>
+                  [%- END %]
                 </div>
             [% ELSE %]
                 <a name="update_[% update.id %]" class="internal-link-fixed-header"></a>
@@ -45,10 +62,25 @@
 
                     <p class="meta-2">
                         [% INCLUDE meta_line %]
+                        [% IF c.user_exists AND c.user.id == update.user_id AND !update.anonymous %]
+                            <!-- TODO: Should this link to a page with server-side form, for users without JavaScript? -->
+                            <a href="#" class="js-hide-name">([% loc('Hide your name?') %])</a>
+                        [% END %]
                         [% mlog = update.latest_moderation_log_entry(); IF mlog %]
                             <br /> Moderated by [% mlog.user.from_body.name %] at [% prettify_dt(mlog.whenedited) %]
                         [% END %]
                     </p>
+                  [% IF c.user_exists AND c.user.id == update.user_id AND !update.anonymous %]
+                    <!-- TODO: Do we want to ajax this in? -->
+                    <!-- TODO: Should this work without javascript too? -->
+                    <div class="box-warning hide-name-form">
+                        <!-- TODO: URL or form with button? -->
+                        <a href="#">[% loc('Hide my name in this update') %]</a>
+                        <p>[% loc('Alternatively, we can hide your name on <strong>all of your updates</strong>:') %]</p>
+                        <!-- TODO: URL or form with button? -->
+                        <a href="#">[% loc('Hide my name on all my updates') %]</a>
+                    </div>
+                  [%- END %]
                 </div>
             [% END %]
             </div>

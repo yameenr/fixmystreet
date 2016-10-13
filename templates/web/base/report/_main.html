@@ -60,6 +60,21 @@
         [% INCLUDE 'report/_report_meta_info.html' %]
     </p>
 
+  [% IF c.user_exists AND c.user.id == problem.user_id AND !problem.anonymous %]
+    <!-- TODO: Do we want to ajax this in? -->
+    <!-- TODO: Should this work without javascript too? -->
+    <div class="box-warning hide-name-form">
+      [% IF problem.bodies_str %]
+        <p>tprintf(loc('Your name has already been sent to %s, but we can hide it on this page:'), problem.bodies_str)</p>
+      [% END %]
+        <!-- TODO: URL or form with button? -->
+        <a href="#">[% loc('Hide my name on this report') %]</a>
+        <p>[% loc('Alternatively, we can hide your name on <strong>all of your reports</strong>:') %]</p>
+        <!-- TODO: URL or form with button? -->
+        <a href="#">[% loc('Hide my name on all my reports') %]</a>
+    </div>
+  [%- END %]
+
     [% INCLUDE 'report/_main_sent_info.html' %]
     [% mlog = problem.latest_moderation_log_entry(); IF mlog %]
         <p>Moderated by [% mlog.user.from_body.name %] at [% prettify_dt(mlog.whenedited) %]</p>

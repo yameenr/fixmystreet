@@ -438,6 +438,15 @@ $.extend(fixmystreet.set_up, {
     $('.js-contribute-as').change();
   },
 
+  hide_name: function() {
+      console.log('hide_name');
+      $('body').on('click', '.js-hide-name', function(e){
+          console.log('click');
+          e.preventDefault();
+          $(this).parent().next('.hide-name-form').slideToggle();
+      });
+  },
+
   inspect_with_public_update: function() {
     $('.js-toggle-public-update').each(function() {
         var $checkbox = $(this);
