@@ -1173,4 +1173,13 @@ sub lookup_by_ref_regex {
     return qr/^\s*ref:\s*(\d+)\s*$/;
 }
 
+=head2 category_extra_hidden
+
+Return true if an Open311 service attribute should be a hidden field.
+=cut
+
+sub category_extra_hidden {
+    my ($self, $meta) = @_;
+}
+
 1;
