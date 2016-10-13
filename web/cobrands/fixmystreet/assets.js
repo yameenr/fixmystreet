@@ -110,6 +110,19 @@ function check_zoom_message_visibility() {
 
 function layer_visibilitychanged() {
     check_zoom_message_visibility.call(this);
+    var layers = fixmystreet.map.getLayersByName('WFS');
+    var visible = 0;
+    for (var i = 0; i<layers.length; i++) {
+        if (layers[i].getVisibility()) {
+            visible++;
+        }
+    }
+    if (visible === 2 || visible === 0) {
+        // We're either switching WFS layers (so going 1->2->1 or 1->0->1)
+        // or switching off WFS layer (so going 1->0). Either way, we want
+        // to show the marker again.
+        fixmystreet.markers.setVisibility(true);
+    }
     select_nearest_asset.call(this);
 }
 
