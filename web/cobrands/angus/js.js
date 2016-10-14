@@ -6,6 +6,7 @@ $(fixmystreet.add_assets({
     asset_item: 'street light',
     max_resolution: 2.388657133579254,
     min_resolution: 0.5971642833948135,
+    asset_id_field: 'n',
     attributes: {
         column_id: 'n'
     },

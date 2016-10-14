@@ -5,6 +5,7 @@ var options = {
     wfs_feature: "COD_ASSETS_POINT",
     max_resolution: 2.388657133579254,
     min_resolution: 0.00001,
+    asset_id_field: 'COD_ASSET_ID',
     attributes: {
         asset_id: 'COD_ASSET_ID',
         usrn: 'COD_USRN'

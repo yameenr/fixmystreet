@@ -19,12 +19,12 @@ function asset_selected(e) {
 
     // Check if there is a known fault with the light that's been clicked,
     // and disallow selection if so.
-    var fault_feature = find_matching_feature(e.feature, this.fixmystreet.fault_layer);
+    var fault_feature = find_matching_feature(e.feature, this.fixmystreet.fault_layer, this.fixmystreet.asset_id_field);
     if (!!fault_feature) {
         fault_popup = new OpenLayers.Popup.FramedCloud("popup",
             e.feature.geometry.getBounds().getCenterLonLat(),
             null,
-            "This fault (" + e.feature.attributes.n + ")<br />has been reported.",
+            "This fault (" + e.feature.attributes[this.fixmystreet.asset_id_field] + ")<br />has been reported.",
             { size: new OpenLayers.Size(0, 0), offset: new OpenLayers.Pixel(0, 0) },
             true, close_fault_popup);
         fixmystreet.map.addPopup(fault_popup);
@@ -65,7 +65,7 @@ function asset_unselected(e) {
     selected_feature = null;
 }
 
-function find_matching_feature(feature, layer) {
+function find_matching_feature(feature, layer, asset_id_field) {
     if (!layer) {
         return false;
     }
@@ -78,7 +78,7 @@ function find_matching_feature(feature, layer) {
     for (var i = 0; i < layer.features.length; i++) {
         var candidate = layer.features[i];
         var distance = candidate.geometry.distanceTo(feature.geometry);
-        if (candidate.attributes.n == feature.attributes.n && distance <= threshold) {
+        if (candidate.attributes[asset_id_field] == feature.attributes[asset_id_field] && distance <= threshold) {
             return candidate;
         }
     }
@@ -178,7 +178,7 @@ function layer_loadend() {
     select_nearest_asset.call(this);
     // Preserve the selected marker when panning/zooming, if it's still on the map
     if (selected_feature !== null && !(selected_feature in this.selectedFeatures)) {
-        var replacement_feature = find_matching_feature(selected_feature, this);
+        var replacement_feature = find_matching_feature(selected_feature, this, this.fixmystreet.asset_id_field);
         if (!!replacement_feature) {
             get_select_control(this).select(replacement_feature);
         }
