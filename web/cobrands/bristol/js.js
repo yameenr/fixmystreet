@@ -7,9 +7,7 @@ var options = {
     min_resolution: 0.00001,
     attributes: {
         asset_id: 'COD_ASSET_ID',
-        usrn: 'COD_USRN',
-        xref: 'COD_XREF',
-        yref: 'COD_YREF'
+        usrn: 'COD_USRN'
     },
     geometryName: 'SHAPE'
 };
