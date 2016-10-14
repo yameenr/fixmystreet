@@ -87,3 +87,7 @@ dd, p {
         #fff
     );
 }
+
+.box-warning {
+    background-color: mix(#fff, $primary, 80%);
+}
