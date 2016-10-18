@@ -91,14 +91,14 @@ function check_zoom_message_visibility() {
         $p = $('#' + id);
     if (category == this.fixmystreet.asset_category) {
         if ($p.length === 0) {
-            $p = $("<p>").prop("id", id);
+            $p = $("<p>").prop("id", id).prop('class', 'category_meta_message');
             // #category_meta might not be here yet, but that's OK as the
             // element simply won't be added to the DOM.
             $p.insertAfter("#category_meta");
         }
 
         if (this.getVisibility() && this.inRange) {
-            $p.html('Or pick a <b class="streetlight-spot">' + this.fixmystreet.asset_item + '</b> from the map &raquo;');
+            $p.html('Or pick a <b class="asset-' + this.fixmystreet.asset_type + '">' + this.fixmystreet.asset_item + '</b> from the map &raquo;');
         } else {
             $p.html('Or zoom in and pick a ' + this.fixmystreet.asset_item + ' from the map');
         }
