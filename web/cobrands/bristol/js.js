@@ -33,4 +33,11 @@ $(fixmystreet.add_assets($.extend({}, options, {
     filter_value: 'GRITBIN'
 })));
 
+$(fixmystreet.add_assets($.extend({}, options, {
+    asset_category: "Street lights",
+    asset_item: 'street light',
+    filter_key: 'COD_ASSET_TYPE',
+    filter_value: 'SL'
+})));
+
 })();
