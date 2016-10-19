@@ -391,7 +391,17 @@ sub inspect : Private {
                     anonymous => 0,
                 } );
             }
-            $c->res->redirect( $c->uri_for( '/report', $problem->id, 'inspect' ) );
+            # This problem might no longer be visible on the current cobrand,
+            # if its body has changed (e.g. by virtue of the category changing)
+            # so redirect to a cobrand where it can be seen if necessary
+            my $redirect_uri;
+            if ( $c->cobrand->is_council && !$c->cobrand->owns_problem($problem) ) {
+                $redirect_uri = $c->cobrand->base_url_for_report( $problem ) . $problem->url;
+            } else {
+                $redirect_uri = $c->uri_for( '/report', $problem->id, 'inspect' );
+            }
+            $c->log->debug( "Redirecting to: " . $redirect_uri );
+            $c->res->redirect( $redirect_uri );
         }
     }
 };
