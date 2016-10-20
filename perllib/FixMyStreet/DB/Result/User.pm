@@ -391,4 +391,20 @@ sub update_reputation {
     $self->update;
 }
 
+sub categories {
+    my $self = shift;
+    use Data::Dumper;
+    return [] unless $self->get_extra_metadata('categories');
+    printf(Dumper($self->get_extra_metadata('categories')));
+    my @categories = $self->result_source->schema->resultset("Contact")->search({
+        id => $self->get_extra_metadata('categories'),
+    }, {
+        columns => [ 'category' ],
+        order_by => 'category',
+    })->all;
+    my $result = [ map( { $_->category } @categories ) ];
+    printf(Dumper($result));
+    return $result;
+}
+
 1;
